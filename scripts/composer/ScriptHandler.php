@@ -16,9 +16,14 @@ use Webmozart\PathUtil\Path;
 class ScriptHandler {
 
   public static function createRequiredFiles(Event $event) {
+
+    $io = $event->getIO();
+
+    $rootPath = getcwd();
     $fs = new Filesystem();
     $drupalFinder = new DrupalFinder();
-    $drupalFinder->locateRoot(getcwd());
+    $drupalFinder->locateRoot($rootPath);
+
     $drupalRoot = $drupalFinder->getDrupalRoot();
 
     $dirs = [
@@ -46,6 +51,29 @@ class ScriptHandler {
           'required' => TRUE,
         ],
       ];
+
+      $io->write("\nEnter your database parameters ...");
+      $databaseName = $io->ask('Database name:');
+      $databaseUsername = $io->ask('User name:', $databaseName);
+      $databasePassword = $io->askAndHideAnswer('Password:');
+      $settings['databases'] = [
+          'default' => (object) [
+              'value' => [
+                  'default'=> [
+                      'database' => $databaseName,
+                      'username' => $databaseUsername,
+                      'password' => $databasePassword,
+                      'prefix' => '',
+                      'host' => 'localhost',
+                      'port' => '3306',
+                      'namespace' => 'Drupal\Core\Database\Driver\mysql',
+                      'driver' => 'mysql',
+                  ]
+              ],
+              'required' => TRUE,
+          ],
+      ];
+
       drupal_rewrite_settings($settings, $drupalRoot . '/sites/default/settings.php');
       $fs->chmod($drupalRoot . '/sites/default/settings.php', 0666);
       $event->getIO()->write("Create a sites/default/settings.php file with chmod 0666");
